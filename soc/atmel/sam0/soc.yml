@@ -65,6 +65,7 @@ family:
     - name: samd21g15a
     - name: samd21g16a
     - name: samd21g17a
+    - name: samd21g17d
     - name: samd21g18a
     - name: samd21g17au
     - name: samd21g18au

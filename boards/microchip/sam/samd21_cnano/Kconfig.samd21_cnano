@@ -1,0 +1,2 @@
+config BOARD_SAMD21_CNANO
+	select SOC_SAMD21G17D

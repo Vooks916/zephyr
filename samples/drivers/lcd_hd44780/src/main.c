@@ -72,6 +72,8 @@
 
 #if defined(CONFIG_SOC_SAM3X8E)
 #define GPIO_NODE DT_NODELABEL(pioc)
+#elif defined(CONFIG_SOC_SAMD21G17D)
+#define GPIO_NODE DT_NODELABEL(porta)
 #else
 #error "Unsupported GPIO driver"
 #endif
@@ -88,6 +90,20 @@
 #define GPIO_PIN_PC21_D7		21	/* PC21 - pin 9 */
 #define GPIO_PIN_PC28_RS		28	/* PC28 - pin 3 */
 #define GPIO_PIN_PC25_E			25	/* PC25 - pin 5 */
+#define GPIO_NAME			"GPIO_"
+
+#elif defined(CONFIG_SOC_SAMD21G17D)
+/* Define GPIO OUT to LCD */
+#define GPIO_PIN_PC12_D0		28	/* PC12 - pin 51 */
+#define GPIO_PIN_PC13_D1		27	/* PC13 - pin 50 */
+#define GPIO_PIN_PC14_D2		23	/* PC14 - pin 49 */
+#define GPIO_PIN_PC15_D3		25	/* PC15 - pin 48 */
+#define GPIO_PIN_PC24_D4		7	/* PC24 - pin 6 */
+#define GPIO_PIN_PC23_D5		6	/* PC23 - pin 7 */
+#define GPIO_PIN_PC22_D6		5	/* PC22 - pin 8 */
+#define GPIO_PIN_PC21_D7		4	/* PC21 - pin 9 */
+#define GPIO_PIN_PC28_RS		2	/* PC28 - pin 3 */
+#define GPIO_PIN_PC25_E			3	/* PC25 - pin 5 */
 #define GPIO_NAME			"GPIO_"
 #endif
 
@@ -130,7 +146,7 @@
 #define LCD_5x8_DOTS			0x00
 
 /* Define some device constants */
-#define LCD_WIDTH			20	/* Max char per line */
+#define LCD_WIDTH			16	/* Max char per line */
 #define HIGH				1
 #define LOW				0
 /* in millisecond */
@@ -405,7 +421,7 @@ void pi_lcd_left_to_right(const struct device *gpio_dev)
 {
 	lcd_data.disp_mode |= LCD_ENTRY_LEFT;
 	_pi_lcd_command(gpio_dev,
-			LCD_ENTRY_MODE_SET | lcd_data.disp_cntl);
+			LCD_ENTRY_MODE_SET | lcd_data.disp_mode);
 }
 
 /** Text that flows from right to left */
@@ -413,7 +429,7 @@ void pi_lcd_right_to_left(const struct device *gpio_dev)
 {
 	lcd_data.disp_mode &= ~LCD_ENTRY_LEFT;
 	_pi_lcd_command(gpio_dev,
-			LCD_ENTRY_MODE_SET | lcd_data.disp_cntl);
+			LCD_ENTRY_MODE_SET | lcd_data.disp_mode);
 }
 
 /** Right justify text from the cursor location */
@@ -528,6 +544,7 @@ int main(void)
 {
 	const struct device *const gpio_dev = DEVICE_DT_GET(GPIO_NODE);
 
+
 	if (!device_is_ready(gpio_dev)) {
 		printk("Device %s not ready!\n", gpio_dev->name);
 		return 0;
@@ -546,29 +563,28 @@ int main(void)
 	GPIO_PIN_CFG(gpio_dev, GPIO_PIN_PC21_D7, GPIO_OUTPUT);
 
 	printk("LCD Init\n");
-	pi_lcd_init(gpio_dev, 20, 4, LCD_5x8_DOTS);
+	pi_lcd_init(gpio_dev, 16, 2, LCD_5x8_DOTS);
 
 	/* Clear display */
 	pi_lcd_clear(gpio_dev);
 
 	while (1) {
 		printk("Page 1: message\n");
-
-		pi_lcd_string(gpio_dev, "********************");
+		
+		pi_lcd_set_cursor(gpio_dev, 0, 0);
+		pi_lcd_string(gpio_dev, "****************");
 		pi_lcd_set_cursor(gpio_dev, 0, 1);
-		pi_lcd_string(gpio_dev, "Arduino Due");
+		pi_lcd_string(gpio_dev, "SAM D21 CNANO");
 		pi_lcd_right_to_left(gpio_dev);
-		pi_lcd_set_cursor(gpio_dev, 15, 2);
-		pi_lcd_string(gpio_dev, "yalpsiD DCL 4x02");
-		pi_lcd_set_cursor(gpio_dev, 19, 3);
+		pi_lcd_set_cursor(gpio_dev, 15, 1);
+		pi_lcd_string(gpio_dev, "yalpsiD DCL 2x61");
 		pi_lcd_left_to_right(gpio_dev);
-		pi_lcd_string(gpio_dev, "********************");
-		k_msleep(MSEC_PER_SEC * 3U);
+		k_msleep(MSEC_PER_SEC);
 
 		/* Clear display */
 		pi_lcd_clear(gpio_dev);
 
-		printk("Page 2: message\n");
+		/*printk("Page 2: message\n");
 
 		pi_lcd_scroll_right(gpio_dev);
 		pi_lcd_string(gpio_dev, "-------------------");
@@ -579,12 +595,12 @@ int main(void)
 		pi_lcd_string(gpio_dev, "My super RTOS");
 		pi_lcd_set_cursor(gpio_dev, 0, 3);
 		pi_lcd_string(gpio_dev, "-------------------");
-		k_msleep(MSEC_PER_SEC * 3U);
+		k_msleep(MSEC_PER_SEC * 3U);*/
 
 		/* Clear display */
-		pi_lcd_clear(gpio_dev);
+		//pi_lcd_clear(gpio_dev);
 
-		printk("Page 3: message\n");
+		/*printk("Page 3: message\n");
 
 		pi_lcd_set_cursor(gpio_dev, 0, 3);
 		pi_lcd_string(gpio_dev, "--------------------");
@@ -594,10 +610,10 @@ int main(void)
 		pi_lcd_string(gpio_dev, "I am home!");
 		pi_lcd_set_cursor(gpio_dev, 0, 2);
 		pi_lcd_string(gpio_dev, "");
-		k_msleep(MSEC_PER_SEC * 3U);
+		k_msleep(MSEC_PER_SEC * 3U);*/
 
 		/* Clear display */
-		pi_lcd_clear(gpio_dev);
+		//pi_lcd_clear(gpio_dev);
 	}
 	return 0;
 }

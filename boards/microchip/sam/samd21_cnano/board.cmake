@@ -1,0 +1,1 @@
+include(${ZEPHYR_BASE}/boards/common/pyocd.board.cmake)

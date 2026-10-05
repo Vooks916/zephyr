@@ -1,0 +1,6 @@
+board:
+  name: samd21_cnano
+  full_name: SAM D21 Curiosity Nano
+  vendor: microchip
+  socs:
+    - name: samd21g17d

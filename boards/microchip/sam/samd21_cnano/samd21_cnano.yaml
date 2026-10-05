@@ -1,0 +1,10 @@
+identifier: samd21_cnano
+name: SAMD21_CNANO
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+ram: 16
+supported:
+  - gpio
+vendor: microchip

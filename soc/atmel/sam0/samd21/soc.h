@@ -27,6 +27,8 @@
 #include <samd21g15a.h>
 #elif defined(CONFIG_SOC_SAMD21G16A)
 #include <samd21g16a.h>
+#elif defined(CONFIG_SOC_SAMD21G17D)
+#include <samd21g17a.h>
 #elif defined(CONFIG_SOC_SAMD21G17A)
 #include <samd21g17a.h>
 #elif defined(CONFIG_SOC_SAMD21G18A)
