@@ -1,0 +1,6 @@
+board:
+  name: same51_cnano
+  full_name: SAM E51 Curiosity Nano Evaluation Kit
+  vendor: atmel
+  socs:
+    - name: same51j20a
