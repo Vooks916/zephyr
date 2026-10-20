@@ -2,10 +2,12 @@
 
 Overview
 ********
+
 The SAM D21 Curiosity Nano Evaluation Kit is a hardware platform for evaluating the SAMD21G17 microcontroller.
 
 Hardware
 ********
+
 - SAMD21G17D microcontroller
 - One yellow user LED
 - One mechanical user switch
@@ -41,18 +43,28 @@ Programming and Debugging
 
 Flashing
 ========
-[How to use this board with Zephyr and how to flash a Zephyr binary on this
-device]
+
+.. zephyr-app-commands::
+   :zephyr-app: samples/basic/blinky
+   :board: samd21_cnano
+   :goals: flash
 
 
 Debugging
 =========
-[ How to debug this board]
+
+.. zephyr-app-commands::
+   :zephyr-app: samples/basic/blinky
+   :board: samd21_cnano
+   :goals: debugserver
 
 
 References
 **********
-SAM D21 Curiosity Nano Evaluation Kit Product Page:
+
+.. target-notes::
+
+.. _SAM D21 Curiosity Nano Evaluation Kit Product Page:
     https://www.microchip.com/en-us/development-tool/DM320119
 
 .. _SAM D21 Curiosity Nano Evalution Kit User Guide:
