@@ -3,7 +3,8 @@
 Overview
 ********
 
-The SAM D21 Curiosity Nano Evaluation Kit is a hardware platform for evaluating the SAMD21G17 microcontroller.
+The SAM D21 Curiosity Nano Evaluation Kit is a hardware platform for evaluating the SAMD21G17
+microcontroller.
 
 Hardware
 ********
@@ -34,7 +35,8 @@ Supported Features
 Connections and IOs
 ===================
 
-The `SAM D21 Curiosity Nano Evalution Kit User Guide`_ has detailed information about board connections.
+The `SAM D21 Curiosity Nano Evalution Kit User Guide`_ has detailed information about board
+connections.
 
 Programming and Debugging
 *************************
