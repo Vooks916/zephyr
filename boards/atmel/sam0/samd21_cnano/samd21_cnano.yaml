@@ -1,0 +1,10 @@
+identifier: samd21_cnano
+name: SAM D21 Curiosity Nano Evaluation Kit
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - gpio
+vendor: atmel
