@@ -1,0 +1,5 @@
+# Copyright (c) 2025 Microchip Technology Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_SAME51_CNANO
+	select SOC_ATSAME51J19A
