@@ -44,6 +44,14 @@ Programming and Debugging
 Flashing
 ========
 
+Ensure that the pyOCD CMSIS-Pack for the SAMD21G17D microcontroller is installed.
+
+.. code-block:: shell
+
+   pyocd pack install atsamd21g17d
+
+Build and flash the application.
+
 .. zephyr-app-commands::
    :zephyr-app: samples/basic/blinky
    :board: samd21_cnano
@@ -53,10 +61,19 @@ Flashing
 Debugging
 =========
 
-.. zephyr-app-commands::
-   :zephyr-app: samples/basic/blinky
+Ensure that the pyOCD CMSIS-Pack for the SAMD21G17D microcontroller is installed.
+
+.. code-block:: shell
+
+   pyocd pack install atsamd21g17d
+
+Build and run the debug server for the application.
+
+.. zephyr-app-commands:: :zephyr-app: samples/basic/blinky
    :board: samd21_cnano
    :goals: debugserver
+
+Connect to the debug server as described in the :ref:`develop_debug` page.
 
 
 References
