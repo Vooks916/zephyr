@@ -62,9 +62,7 @@ Debugging
 References
 **********
 
-.. target-notes::
-
-.. _SAM D21 Curiosity Nano Evaluation Kit Product Page:
+SAM D21 Curiosity Nano Evaluation Kit Product Page:
     https://www.microchip.com/en-us/development-tool/DM320119
 
 .. _SAM D21 Curiosity Nano Evalution Kit User Guide:
