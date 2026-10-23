@@ -62,7 +62,6 @@ Build and flash the application.
    :board: samd21_cnano
    :goals: flash
 
-
 Debugging
 =========
 
@@ -73,7 +72,6 @@ Build and run the debug server for the application.
    :goals: debugserver
 
 Connect to the debug server as described in the :ref:`develop_debug` page.
-
 
 References
 **********
