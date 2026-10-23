@@ -43,14 +43,17 @@ Programming and Debugging
 
 .. zephyr:board-supported-runners::
 
-Flashing
-========
+Prerequisites
+=============
 
 Ensure that the pyOCD CMSIS-Pack for the SAMD21G17D microcontroller is installed.
 
 .. code-block:: shell
 
    pyocd pack install atsamd21g17d
+
+Flashing
+========
 
 Build and flash the application.
 
@@ -62,12 +65,6 @@ Build and flash the application.
 
 Debugging
 =========
-
-Ensure that the pyOCD CMSIS-Pack for the SAMD21G17D microcontroller is installed.
-
-.. code-block:: shell
-
-   pyocd pack install atsamd21g17d
 
 Build and run the debug server for the application.
 
