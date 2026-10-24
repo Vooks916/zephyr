@@ -1,10 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+
 identifier: samd21_cnano
-name: SAM D21 Curiosity Nano Evaluation Kit
+name: SAM D21 Curiosity Nano
 type: mcu
 arch: arm
 toolchain:
   - zephyr
   - gnuarmemb
+flash: 128
+ram: 16
 supported:
+  - adc
+  - dac
+  - dma
+  - flash
   - gpio
+  - hwinfo
+  - i2c
+  - pwm
+  - rtc
+  - spi
+  - uart
+  - watchdog
 vendor: atmel

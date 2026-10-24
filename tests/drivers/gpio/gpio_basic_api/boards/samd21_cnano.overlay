@@ -1,0 +1,11 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	resources {
+		compatible = "test-gpio-basic-api";
+		out-gpios = <&porta 20 0>; /* Jumper PA20 to PA21 */
+		in-gpios = <&porta 21 0>;
+	};
+};
