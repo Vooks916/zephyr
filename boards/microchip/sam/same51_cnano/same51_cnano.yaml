@@ -1,0 +1,10 @@
+identifier: same51_cnano
+name: SAM E51 Curiosity Nano Evaluation Kit
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - gpio
+vendor: microchip
