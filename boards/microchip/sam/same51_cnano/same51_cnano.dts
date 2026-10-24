@@ -1,0 +1,35 @@
+/*
+ * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ */
+
+ /dts-v1/;
+ #include <microchip/sam/sam_d5x_e5x/atsame51/atsame51j20a.dtsi>
+
+/{
+    model = "SAM E51 Curiosity Nano";
+	compatible = "microchip,same51j20a";
+
+    chosen {
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led0: led_0 {
+                gpios = <&porta 14 GPIO_ACTIVE_HIGH>;
+                label = "LED 0";
+                };
+        };
+
+    aliases {
+        led0 = &led0;
+    };
+};
+
+&porta {
+    status = "okay";
+};
