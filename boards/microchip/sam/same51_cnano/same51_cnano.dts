@@ -30,6 +30,10 @@
     };
 };
 
+&cpu0 {
+    clock-frequency = <120000000>;
+};
+
 &porta {
     status = "okay";
 };
