@@ -1,3 +1,6 @@
+# Copyright (c) 2025 Microchip Technology Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 identifier: same51_cnano
 name: SAM E51 Curiosity Nano Evaluation Kit
 type: mcu
@@ -5,6 +8,21 @@ arch: arm
 toolchain:
   - zephyr
   - gnuarmemb
+flash: 1024
+ram: 256
 supported:
+  - adc
+  - dac
+  - dma
+  - entropy
+  - flash
   - gpio
+  - hwinfo
+  - i2c
+  - pinctrl
+  - pwm
+  - rtc
+  - spi
+  - uart
+  - watchdog
 vendor: microchip
