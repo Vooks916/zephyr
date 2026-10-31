@@ -21,13 +21,15 @@ LOG_MODULE_REGISTER(ws2812_gpio);
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/clock_control.h>
+#if defined(CONFIG_SOC_FAMILY_NORDIC_NRF)
 #include <zephyr/drivers/clock_control/nrf_clock_control.h>
+#endif
 #include <zephyr/dt-bindings/led/led.h>
 #include <zephyr/sys/util_macro.h>
 
 struct ws2812_gpio_cfg {
 	struct gpio_dt_spec gpio;
-	uintptr_t gpio_outset_base;
+	uintptr_t gpio_out_base;
 	uint8_t num_colors;
 	const uint8_t *color_mapping;
 	size_t length;
@@ -37,7 +39,14 @@ struct ws2812_gpio_cfg {
  * GPIO set/clear (these make assumptions about assembly details
  * below).
  *
- * This uses OUTCLR == OUTSET+4.
+ * The base address points at the lower of the OUTSET and OUTCLR
+ * registers, so both offsets are small and non-negative as required by
+ * the Thumb STR immediate encoding:
+ * - nRF: OUTCLR == OUTSET + 4
+ * - SAM0 PORT: OUTSET == OUTCLR + 4
+ *
+ * On SAM0 the bit loop runs from RAM, as flash wait states would
+ * otherwise stretch the NOP delays.
  *
  * We should be able to make this portable using the results of
  * https://github.com/zephyrproject-rtos/zephyr/issues/11917.
@@ -48,8 +57,20 @@ struct ws2812_gpio_cfg {
  * Per Arm docs, both Rd and Rn must be r0-r7, so we use the "l"
  * constraint in the below assembly.
  */
-#define SET_HIGH "str %[p], [%[r], #0]\n" /* OUTSET = BIT(LED_PIN) */
-#define SET_LOW "str %[p], [%[r], #4]\n"  /* OUTCLR = BIT(LED_PIN) */
+#if defined(CONFIG_SOC_FAMILY_NORDIC_NRF)
+#define WS2812_GPIO_OUT_BASE_OFFSET offsetof(NRF_GPIO_Type, OUTSET)
+#define WS2812_GPIO_OUTSET_OFFSET 0
+#define WS2812_GPIO_OUTCLR_OFFSET 4
+#define WS2812_GPIO_FUNC
+#else
+#define WS2812_GPIO_OUT_BASE_OFFSET 0x14 /* PORT OUTCLR */
+#define WS2812_GPIO_OUTSET_OFFSET 4
+#define WS2812_GPIO_OUTCLR_OFFSET 0
+#define WS2812_GPIO_FUNC __ramfunc
+#endif
+
+#define SET_HIGH "str %[p], [%[r], #" STRINGIFY(WS2812_GPIO_OUTSET_OFFSET) "]\n"
+#define SET_LOW "str %[p], [%[r], #" STRINGIFY(WS2812_GPIO_OUTCLR_OFFSET) "]\n"
 
 #define NOPS(i, _) "nop\n"
 #define NOP_N_TIMES(n) LISTIFY(n, NOPS, ())
@@ -74,39 +95,9 @@ struct ws2812_gpio_cfg {
 			[r] "l" (base),				\
 			[p] "l" (pin)); } while (false)
 
-static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
+static WS2812_GPIO_FUNC void send_bits(volatile uint32_t *base, uint32_t val,
+				       const uint8_t *buf, size_t len)
 {
-	const struct ws2812_gpio_cfg *config = dev->config;
-	volatile uint32_t *base = (uint32_t *)config->gpio_outset_base;
-	const uint32_t val = BIT(config->gpio.pin);
-#if defined(CONFIG_CLOCK_CONTROL_NRF)
-	struct onoff_manager *mgr =
-		z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF);
-#else
-	const struct device *clk_dev = DEVICE_DT_GET_ONE(COND_CODE_1(NRF_CLOCK_HAS_HFCLK,
-							       (nordic_nrf_clock_hfclk),
-							       (nordic_nrf_clock_xo)));
-#endif
-	struct onoff_client cli;
-	unsigned int key;
-	int rc;
-
-	sys_notify_init_spinwait(&cli.notify);
-#if defined(CONFIG_CLOCK_CONTROL_NRF)
-	rc = onoff_request(mgr, &cli);
-#else
-	rc = nrf_clock_control_request(clk_dev, NULL, &cli);
-#endif
-	if (rc < 0) {
-		return rc;
-	}
-
-	while (sys_notify_fetch_result(&cli.notify, &rc)) {
-		/* pend until clock is up and running */
-	}
-
-	key = irq_lock();
-
 	while (len--) {
 		uint32_t b = *buf++;
 		int32_t i;
@@ -130,9 +121,46 @@ static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
 			}
 		}
 	}
+}
 
+static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
+{
+	const struct ws2812_gpio_cfg *config = dev->config;
+	volatile uint32_t *base = (uint32_t *)config->gpio_out_base;
+	const uint32_t val = BIT(config->gpio.pin);
+	unsigned int key;
+#if defined(CONFIG_SOC_FAMILY_NORDIC_NRF)
+#if defined(CONFIG_CLOCK_CONTROL_NRF)
+	struct onoff_manager *mgr =
+		z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF);
+#else
+	const struct device *clk_dev = DEVICE_DT_GET_ONE(COND_CODE_1(NRF_CLOCK_HAS_HFCLK,
+							       (nordic_nrf_clock_hfclk),
+							       (nordic_nrf_clock_xo)));
+#endif
+	struct onoff_client cli;
+	int rc;
+
+	sys_notify_init_spinwait(&cli.notify);
+#if defined(CONFIG_CLOCK_CONTROL_NRF)
+	rc = onoff_request(mgr, &cli);
+#else
+	rc = nrf_clock_control_request(clk_dev, NULL, &cli);
+#endif
+	if (rc < 0) {
+		return rc;
+	}
+
+	while (sys_notify_fetch_result(&cli.notify, &rc)) {
+		/* pend until clock is up and running */
+	}
+#endif
+
+	key = irq_lock();
+	send_bits(base, val, buf, len);
 	irq_unlock(key);
 
+#if defined(CONFIG_SOC_FAMILY_NORDIC_NRF)
 #if defined(CONFIG_CLOCK_CONTROL_NRF)
 	rc = onoff_release(mgr);
 #else
@@ -142,6 +170,9 @@ static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
 	rc = MIN(rc, 0);
 
 	return rc;
+#else
+	return 0;
+#endif
 }
 
 static int ws2812_gpio_update_rgb(const struct device *dev,
@@ -248,9 +279,9 @@ static const uint8_t ws2812_gpio_##idx##_color_mapping[] =		\
 									\
 	static const struct ws2812_gpio_cfg ws2812_gpio_##idx##_cfg = { \
 		.gpio = GPIO_DT_SPEC_INST_GET(idx, gpios),		\
-		.gpio_outset_base =					\
+		.gpio_out_base =					\
 			DT_REG_ADDR(DT_GPIO_CTLR(DT_DRV_INST(idx), gpios)) + \
-			offsetof(NRF_GPIO_Type, OUTSET),		\
+			WS2812_GPIO_OUT_BASE_OFFSET,			\
 		.num_colors = WS2812_NUM_COLORS(idx),			\
 		.color_mapping = ws2812_gpio_##idx##_color_mapping,	\
 		.length = DT_INST_PROP(idx, chain_length),		\
