@@ -49,6 +49,10 @@ config SOC_SAMD21G18A
 	bool
 	select SOC_SERIES_SAMD21
 
+config SOC_SAMD21G17D
+	bool
+	select SOC_SERIES_SAMD21
+
 config SOC_SAMD21G17AU
 	bool
 	select SOC_SERIES_SAMD21
@@ -82,6 +86,7 @@ config SOC
 	default "samd21g16a" if SOC_SAMD21G16A
 	default "samd21g17a" if SOC_SAMD21G17A
 	default "samd21g18a" if SOC_SAMD21G18A
+	default "samd21g17d" if SOC_SAMD21G17D
 	default "samd21g17au" if SOC_SAMD21G17AU
 	default "samd21g18au" if SOC_SAMD21G18AU
 	default "samd21j15a" if SOC_SAMD21J15A
