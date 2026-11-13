@@ -162,7 +162,8 @@ manifest:
       groups:
         - hal
     - name: hal_atmel
-      revision: 8f95c79f2a80427ef446563cc9addefa959e92a9
+      url: https://github.com/Zbezzant/hal_atmel
+      revision: add-samd21-cnano
       path: modules/hal/atmel
       groups:
         - hal
