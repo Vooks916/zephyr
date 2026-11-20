@@ -252,13 +252,11 @@ static int spi_configure(const struct device *dev, const struct spi_config *conf
 	sercom_spi_registers_t *spi = SPI_GET_BASE_ADDR(
 		spi_reg_cfg->regs, SPI_OP_MODE_GET(config->operation) == SPI_OP_MODE_PERIPHERAL);
 
-	spi_disable(spi_reg_cfg);
-
 	if (spi_context_configured(&data->ctx, config) == true) {
-		spi_enable(spi_reg_cfg, config->operation);
-
 		return 0;
 	}
+
+	spi_disable(spi_reg_cfg);
 
 	/* Select the Character Size */
 	if (SPI_WORD_SIZE_GET(config->operation) != SUPPORTED_SPI_WORD_SIZE) {
@@ -615,6 +613,7 @@ static int spi_transceive_interrupt(const struct device *dev, const struct spi_c
 		     ((void)spi->SERCOM_DATA, k_busy_wait(DELAY_US))) == false) {
 		LOG_ERR("Timeout while clearing RXC");
 	}
+	spi->SERCOM_STATUS = SERCOM_SPI_STATUS_BUFOVF_Msk;
 
 	/* Get the dummysize: use spi_context helpers for total buffer lengths */
 	size_t total_tx_len = spi_context_total_tx_len(&data->ctx);
