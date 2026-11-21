@@ -29,9 +29,24 @@ LOG_MODULE_REGISTER(adc_sam0, CONFIG_ADC_LOG_LEVEL);
 #define ADC_SAM0_REFERENCE_GLITCH 1
 #endif
 
+/* Maximum number of channels addressable through struct adc_channel_cfg::channel_id */
+#define ADC_SAM0_MAX_CHANNELS 32U
+
+struct adc_sam0_channel {
+	uint32_t inputctrl;
+	uint8_t refctrl;
+	uint8_t sampctrl;
+	bool differential;
+};
+
 struct adc_sam0_data {
 	struct adc_context ctx;
 	const struct device *dev;
+
+	/* Register values for each channel, applied when the channel is read */
+	struct adc_sam0_channel channels[ADC_SAM0_MAX_CHANNELS];
+	/* Bitmask of channels configured with adc_sam0_channel_setup() */
+	uint32_t configured_channels;
 
 	uint16_t *buffer;
 
@@ -112,10 +127,15 @@ static int adc_sam0_acquisition_to_clocks(const struct device *dev,
 static int adc_sam0_channel_setup(const struct device *dev,
 				  const struct adc_channel_cfg *channel_cfg)
 {
-	const struct adc_sam0_cfg *const cfg = dev->config;
-	Adc *const adc = cfg->regs;
+	struct adc_sam0_data *data = dev->data;
+	struct adc_sam0_channel *channel;
 	int retval;
 	uint8_t sampctrl = 0;
+
+	if (channel_cfg->channel_id >= ADC_SAM0_MAX_CHANNELS) {
+		LOG_ERR("Channel %d is not valid", channel_cfg->channel_id);
+		return -EINVAL;
+	}
 
 	if (channel_cfg->acquisition_time != ADC_ACQ_TIME_DEFAULT) {
 		retval = adc_sam0_acquisition_to_clocks(dev,
@@ -127,9 +147,6 @@ static int adc_sam0_channel_setup(const struct device *dev,
 
 		sampctrl |= ADC_SAMPCTRL_SAMPLEN(retval);
 	}
-
-	adc->SAMPCTRL.reg = sampctrl;
-	wait_synchronization(adc);
 
 	uint8_t refctrl;
 
@@ -158,23 +175,6 @@ static int adc_sam0_channel_setup(const struct device *dev,
 	default:
 		LOG_ERR("Selected reference is not valid");
 		return -EINVAL;
-	}
-	if (adc->REFCTRL.reg != refctrl) {
-#ifdef ADC_SAM0_REFERENCE_ENABLE_PROTECTED
-		adc->CTRLA.bit.ENABLE = 0;
-		wait_synchronization(adc);
-#endif
-		adc->REFCTRL.reg = refctrl;
-		wait_synchronization(adc);
-#ifdef ADC_SAM0_REFERENCE_ENABLE_PROTECTED
-		adc->CTRLA.bit.ENABLE = 1;
-		wait_synchronization(adc);
-#endif
-#ifdef ADC_SAM0_REFERENCE_GLITCH
-		struct adc_sam0_data *data = dev->data;
-
-		data->reference_changed = 1;
-#endif
 	}
 
 	uint32_t inputctrl = 0;
@@ -218,17 +218,16 @@ static int adc_sam0_channel_setup(const struct device *dev,
 	inputctrl |= ADC_INPUTCTRL_MUXPOS(channel_cfg->input_positive);
 	if (channel_cfg->differential) {
 		inputctrl |= ADC_INPUTCTRL_MUXNEG(channel_cfg->input_negative);
-
-		ADC_DIFF(adc) |= ADC_DIFF_MASK;
 	} else {
 		inputctrl |= ADC_INPUTCTRL_MUXNEG_GND;
-
-		ADC_DIFF(adc) &= ~ADC_DIFF_MASK;
 	}
-	wait_synchronization(adc);
 
-	adc->INPUTCTRL.reg = inputctrl;
-	wait_synchronization(adc);
+	channel = &data->channels[channel_cfg->channel_id];
+	channel->inputctrl = inputctrl;
+	channel->refctrl = refctrl;
+	channel->sampctrl = sampctrl;
+	channel->differential = channel_cfg->differential;
+	data->configured_channels |= BIT(channel_cfg->channel_id);
 
 	/* Enable references if they're selected */
 	switch (channel_cfg->input_positive) {
@@ -255,6 +254,46 @@ static int adc_sam0_channel_setup(const struct device *dev,
 	}
 
 	return 0;
+}
+
+static void adc_sam0_apply_channel(const struct device *dev,
+				   const struct adc_sam0_channel *channel)
+{
+	const struct adc_sam0_cfg *const cfg = dev->config;
+	Adc *const adc = cfg->regs;
+	uint32_t inputctrl = channel->inputctrl;
+
+	adc->SAMPCTRL.reg = channel->sampctrl;
+	wait_synchronization(adc);
+
+	if (adc->REFCTRL.reg != channel->refctrl) {
+#ifdef ADC_SAM0_REFERENCE_ENABLE_PROTECTED
+		adc->CTRLA.bit.ENABLE = 0;
+		wait_synchronization(adc);
+#endif
+		adc->REFCTRL.reg = channel->refctrl;
+		wait_synchronization(adc);
+#ifdef ADC_SAM0_REFERENCE_ENABLE_PROTECTED
+		adc->CTRLA.bit.ENABLE = 1;
+		wait_synchronization(adc);
+#endif
+#ifdef ADC_SAM0_REFERENCE_GLITCH
+		struct adc_sam0_data *data = dev->data;
+
+		data->reference_changed = 1;
+#endif
+	}
+
+	/* ADC_DIFF() refers to the local inputctrl on parts with INPUTCTRL.DIFFMODE */
+	if (channel->differential) {
+		ADC_DIFF(adc) |= ADC_DIFF_MASK;
+	} else {
+		ADC_DIFF(adc) &= ~ADC_DIFF_MASK;
+	}
+	wait_synchronization(adc);
+
+	adc->INPUTCTRL.reg = inputctrl;
+	wait_synchronization(adc);
 }
 
 static void adc_sam0_start_conversion(const struct device *dev)
@@ -315,6 +354,7 @@ static int start_read(const struct device *dev,
 	const struct adc_sam0_cfg *const cfg = dev->config;
 	struct adc_sam0_data *data = dev->data;
 	Adc *const adc = cfg->regs;
+	uint32_t channel_id;
 	int error;
 
 	if (sequence->oversampling > 10U) {
@@ -385,6 +425,14 @@ static int start_read(const struct device *dev,
 		LOG_ERR("Channel scanning is not supported");
 		return -ENOTSUP;
 	}
+
+	channel_id = find_lsb_set(sequence->channels) - 1U;
+	if ((data->configured_channels & BIT(channel_id)) == 0U) {
+		LOG_ERR("Channel %u is not configured", channel_id);
+		return -EINVAL;
+	}
+
+	adc_sam0_apply_channel(dev, &data->channels[channel_id]);
 
 	error = check_buffer_size(sequence, 1);
 	if (error) {
